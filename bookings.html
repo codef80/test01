@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>الحجوزات والأعمال المسندة</title>
+  <title>الحجوزات</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
@@ -72,7 +73,10 @@
     .fc .fc-toolbar.fc-header-toolbar{margin-bottom:.55rem;gap:.38rem;flex-wrap:wrap;padding:.45rem;background:#f8fafc;border-radius:var(--r-lg) var(--r-lg) 0 0}
     .fc .fc-scrollgrid{border-radius:0 0 var(--r-lg) var(--r-lg);overflow:hidden}
 
+    .modal-dialog{max-width:1100px}
     .modal-content{border-radius:1.25rem;border:none;box-shadow:0 24px 64px rgba(0,0,0,.18)}
+    .modal-footer-sticky{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--border);z-index:5}
+    @media(max-width:768px){.modal-dialog{margin:.35rem}.modal-content{min-height:calc(100vh - .7rem)}}
     .mh{background:linear-gradient(135deg,var(--p) 0%,#026aa7 100%);color:#fff;padding:.8rem .95rem;border-radius:1.25rem 1.25rem 0 0;display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:.92rem}
     .mh .btn-close{filter:brightness(0) invert(1);opacity:.9}
     .mb{padding:.8rem;background:#f8fafc}
@@ -135,6 +139,20 @@
 </div>
 
 <div class="pane on" id="pane-calendar">
+  <div class="box" style="margin-bottom:.7rem">
+    <div class="bb" style="padding:.75rem">
+      <div class="g2">
+        <div>
+          <label class="fl">فلتر النوع</label>
+          <select id="typeFilter" class="form-select"></select>
+        </div>
+        <div style="display:flex;align-items:end;gap:.4rem;flex-wrap:wrap">
+          <button class="tb" style="padding:.45rem .8rem" onclick="clearTypeFilter()"><i class="fas fa-filter-circle-xmark"></i> مسح الفلتر</button>
+          <button class="tb st" style="padding:.45rem .8rem" onclick="hardRefreshAll()"><i class="fas fa-rotate"></i> تحديث</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="box">
     <div class="bh"><div class="bt"><i class="fas fa-calendar-check"></i> ادارة الحجوزات</div><span class="chip cb"><i class="fas fa-hand-pointer"></i> اضغط على يوم</span></div>
     <div style="padding:.55rem"><div id="calendar"></div></div>
@@ -159,13 +177,13 @@
 </div>
 
 <div class="modal fade" id="bModal" tabindex="-1">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
       <div class="mh">
         <div style="display:flex;align-items:center;gap:.42rem"><i class="fas fa-calendar-plus"></i><span id="m-ttl">حجوزات اليوم</span></div>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="mb">
+      <div class="mb" style="max-height:calc(100vh - 190px);overflow:auto">
         <div id="day-list"></div>
         <div class="sep"><i class="fas fa-plus-circle"></i> اضافة حجز جديد</div>
         <form id="bForm" autocomplete="off">
@@ -215,56 +233,83 @@
               <input id="f-net" class="form-control" readonly style="background:#f0fdf4;font-weight:800;color:var(--ok)">
             </div>
           </div>
-          <button type="submit" class="btn btn-success w-100 mt-1" style="font-size:.86rem;padding:.62rem;border-radius:var(--r);font-weight:800;font-family:'Tajawal',sans-serif">
-            <i class="fas fa-save me-1"></i><span id="save-txt">حفظ الحجز</span>
-          </button>
         </form>
       </div>
+      <div class="modal-footer-sticky" style="padding:.75rem .9rem;display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إغلاق</button><button type="submit" form="bForm" class="btn btn-success"><i class="fas fa-save me-1"></i><span id="save-txt">حفظ الحجز</span></button></div>
     </div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-<script src="config.js"></script>
+<script src="config-v2.js"></script>
 <script>
-let cal,bModal,_cfg={},_types=[],_srv=[],_users=[],_calOk=false;
+let cal,bModal,_cfg={},_types=[],_srv=[],_users=[],_calOk=false,_pageShown=false,_allEvents=[],_filteredEvents=[],_tasksCache=null,_selectedType='';
+const TEMPLATE_KEYS={paymentReminder:['booking_payment_reminder','قالب_تذكير_سداد_الحجز'],invoiceSend:['booking_invoice_send','قالب_إرسال_فاتورة_الحجز']};
+function getTemplateValue(keys, fallback=''){try{const raw=localStorage.getItem(APP_CONFIG.STORAGE.templates)||'{}';const store=JSON.parse(raw||'{}');for(const k of keys){if(store&&store[k])return String(store[k]);}if(store&&Array.isArray(store.items)){for(const item of store.items){const code=String(item.code||item.key||item.id||'').trim();if(keys.includes(code)) return String(item.text||item.content||item.value||'');}}}catch(e){} return fallback;}
+function fillTemplate(tpl, data){return String(tpl||'').replace(/\{\{\s*(\w+)\s*\}\}/g, (_,k)=> data[k] ?? '');}
 
 function goTab(id){
   document.querySelectorAll(".tb[data-tab]").forEach(b=>b.classList.toggle("on",b.dataset.tab===id));
   document.querySelectorAll(".pane").forEach(p=>p.classList.toggle("on",p.id==="pane-"+id));
-  if(id==="calendar"&&!_calOk){initCal();_calOk=true}
-  if(id==="tasks")loadTasks();
+  if(id==="calendar"){ _pageShown=true; if(!_calOk){initCal();_calOk=true}else{setTimeout(()=>cal.updateSize(),60);setTimeout(()=>cal.updateSize(),220)} }
+  if(id==="tasks") renderTasksFromCache();
 }
+
+window.addEventListener("message", e => {
+  if (e.data?.type === "page:shown" && e.data?.payload?.pageId === "bookings") {
+    _pageShown = true;
+    if(!_calOk){initCal();_calOk=true}else{setTimeout(()=>cal.updateSize(),60);setTimeout(()=>cal.updateSize(),220)}
+  }
+});
 
 document.addEventListener("DOMContentLoaded",async()=>{
   bModal=new bootstrap.Modal(document.getElementById("bModal"));
   document.getElementById("bModal").addEventListener("hidden.bs.modal",resetForm);
   document.getElementById("bForm").addEventListener("submit",saveBooking);
-  await Promise.all([loadCfg(),loadUsers()]);
-  initCal();
-  _calOk=true;
+  document.getElementById("typeFilter").addEventListener("change", e => { _selectedType=e.target.value||''; applyTypeFilter(); });
+  await bootstrapData();
+  _pageShown = true;
+  if(!_calOk){initCal();_calOk=true}
 });
 
-async function loadCfg(){
-  try{_cfg=await API.run("getSystemSettings");_types=_cfg.bookingTypes||["زواج","تغطية","إعلان"];_srv=_cfg.bookingExtraServices||["صور","فيديو","درون"]}
-  catch(e){_types=["زواج","تغطية","إعلان"];_srv=["صور","فيديو","درون"]}
-}
-async function loadUsers(){
+
+async function bootstrapData(){
   try{
-    const r=await API.run("getAllUsersData");_users=(r.users||[]).filter(u=>u.status==="فعال");
+    const session = Session.get();
+    const [cfg, users, events, tasks] = await Promise.all([
+      API.run("getSystemSettings").catch(()=>({})),
+      API.run("getAllUsersData").catch(()=>({users:[]})),
+      API.run("getEvents").catch(()=>[]),
+      API.run("getAssignedBookings", session.userCode || "", session.permissions?.allPages===true).catch(()=>({upcoming:[],past:[]}))
+    ]);
+    _cfg=cfg||{};
+    _types=_cfg.bookingTypes||["زواج","تغطية","إعلان"];
+    _srv=_cfg.bookingExtraServices||["صور","فيديو","درون"];
+    _users=(users.users||[]).filter(u=>u.status==="فعال");
+    _allEvents=Array.isArray(events)?events:[];
+    _tasksCache=tasks||{upcoming:[],past:[]};
     const sel=document.getElementById("f-assigned");
     sel.innerHTML=`<option value="">-- بدون اسناد --</option>`;
     _users.forEach(u=>sel.insertAdjacentHTML("beforeend",`<option value="${x(u.code)}">${x(u.name)}</option>`));
-  }catch(e){}
+    const typeSel=document.getElementById('typeFilter');
+    const prevType=typeSel.value || _selectedType || '';
+    typeSel.innerHTML=`<option value="">كل الأنواع</option>`+_types.map(t=>`<option value="${x(t)}">${x(t)}</option>`).join('');
+    if(prevType && _types.includes(prevType)){ typeSel.value=prevType; _selectedType=prevType; }
+    buildTypes(); buildSrv([]); applyTypeFilter(); renderTasksFromCache();
+  }catch(e){console.error(e)}
 }
+function applyTypeFilter(){ _filteredEvents=!_selectedType?[..._allEvents]:_allEvents.filter(ev=>String(ev.extendedProps?.type||"").trim()===_selectedType); if(cal) cal.refetchEvents(); if(document.getElementById("f-date").value) renderDayList(document.getElementById("f-date").value); }
+function clearTypeFilter(){ document.getElementById("typeFilter").value=""; _selectedType=""; applyTypeFilter(); }
+async function hardRefreshAll(){ Swal.fire({title:'جاري التحديث...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()}); try{ await bootstrapData(); if(cal){cal.refetchEvents();setTimeout(()=>cal.updateSize(),60);setTimeout(()=>cal.updateSize(),220)} const date=document.getElementById('f-date').value; if(date && document.getElementById('bModal').classList.contains('show')) renderDayList(date); Swal.fire({title:'تم التحديث',icon:'success',timer:1000,showConfirmButton:false}); }catch(e){Swal.fire('خطأ','تعذر التحديث','error')} }
+function renderTd(list){return list.map(b=>`<div class="bm"><div><div class="bm-n">${x(b.name||b.customerName||"")}</div><div class="bm-m">${x(b.type||"")} - ${x(b.date||"")}${b.time?" - "+x(b.time):""}${b.assignedToName?" - "+x(b.assignedToName):""}</div></div><div class="bm-r ${+b.remaining?"cr":"cg"}">${+b.remaining?n(b.remaining)+" ريال":"تم السداد"}</div></div>`).join("");}
 
 function initCal(){
   cal=new FullCalendar.Calendar(document.getElementById("calendar"),{
     initialView:"dayGridMonth",locale:"ar",direction:"rtl",firstDay:0,height:"auto",
     headerToolbar:{left:"dayGridMonth today",center:"title",right:"prev,next"},
     buttonText:{today:"اليوم",month:"شهر"},displayEventTime:false,
-    events:(i,ok,fail)=>API.run("getEvents").then(ok).catch(fail),
+    events:(i,ok)=>ok([...( _filteredEvents || [])]),
     dateClick:i=>openModal(i.dateStr.substring(0,10)),
     eventClick:i=>openModal(i.event.startStr.substring(0,10)),
   });
@@ -273,44 +318,43 @@ function initCal(){
   adapt();window.addEventListener("resize",adapt);
 }
 
-async function openModal(date){
+
+function openModal(date){
   resetForm();document.getElementById("f-date").value=date;document.getElementById("m-ttl").textContent="📅 "+date;
-  buildTypes();buildSrv([]);bModal.show();await loadDayList(date);
+  buildTypes();buildSrv([]);bModal.show();renderDayList(date);
 }
-async function loadDayList(date){
+function getDayEvents(date){ const src=_selectedType?_filteredEvents:_allEvents; return src.filter(e=>(e.start||"").substring(0,10)===date); }
+function renderDayList(date){
   const el=document.getElementById("day-list");
-  el.innerHTML=`<div class="ld"><div class="sp"></div></div>`;
-  try{
-    const all=await API.run("getEvents");
-    const day=all.filter(e=>(e.start||"").substring(0,10)===date);
-    if(!day.length){el.innerHTML="";return}
-    el.innerHTML=day.map(ev=>{
-      const p=ev.extendedProps||{};const rem=parseFloat(p.remaining||0);
-      const exps=(p.expenses||[]).map(e=>`${x(e.reason||"")}(${x(e.type)}:${e.value})`).join(" | ");
-      return`<div class="dc">
-        <div class="dc-top"><div class="dc-name">${x(p.name||"")} - ${x(p.type||"")}</div><span class="chip ${rem>0?"cr":"cg"}">${rem>0?n(rem)+" ريال":"مسدد"}</span></div>
-        <div class="dc-chips">
-          ${p.place?`<span class="chip cb"><i class="fas fa-location-dot"></i>${x(p.place)}</span>`:""}
-          ${p.phone?`<span class="chip cb"><i class="fas fa-phone"></i>${x(p.phone)}</span>`:""}
-          ${p.assignedToName?`<span class="chip co"><i class="fas fa-user-check"></i>${x(p.assignedToName)}</span>`:""}
-        </div>
-        <div class="dc-fin">
-          <span>المبلغ: <strong>${p.amount||0}</strong></span>
-          <span>الواصل: <strong>${p.deposit||0}</strong></span>
-          <span style="color:var(--err);font-weight:800">المتبقي: ${p.remaining||0}</span>
-          ${exps?`<span style="color:var(--muted);font-size:.68rem;width:100%">المصروفات: ${exps}</span>`:""}
-        </div>
-        <div class="dc-acts">
-          ${rem>0?`<button class="btn btn-success btn-sm" onclick="actPaid('${p.id}','${date}')"><i class="fas fa-check"></i> مسدد</button>`:""}
-          ${rem>0&&p.phone?`<button class="btn btn-warning btn-sm" onclick="actRemind('${x(p.phone)}','${x(p.name)}',${rem})"><i class="fas fa-bell"></i></button>`:""}
-          <button class="btn btn-info btn-sm text-white" onclick="actInv('${p.id}','${x(p.phone||"")}')"><i class="fas fa-receipt"></i></button>
-          <button class="btn btn-outline-warning btn-sm" onclick="actEdit(${JSON.stringify(p).replace(/"/g,"&quot;")})"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-outline-danger btn-sm" onclick="actDel('${p.id}','${date}')"><i class="fas fa-trash"></i></button>
-        </div>
-      </div>`;
-    }).join("");
-  }catch(e){el.innerHTML="";console.error(e)}
+  const day=getDayEvents(date);
+  if(!day.length){el.innerHTML=`<div class="empty"><i class="fas fa-calendar-xmark"></i><p>لا توجد حجوزات لهذا اليوم${_selectedType?" ضمن النوع المحدد":""}</p></div>`;return}
+  el.innerHTML=day.map(ev=>{
+    const p=ev.extendedProps||{};const rem=parseFloat(p.remaining||0);
+    const exps=(p.expenses||[]).map(e=>`${x(e.reason||"")}(${x(e.type)}:${e.value})`).join(" | ");
+    return`<div class="dc">
+      <div class="dc-top"><div class="dc-name">${x(p.name||"")} - ${x(p.type||"")}</div><span class="chip ${rem>0?"cr":"cg"}">${rem>0?n(rem)+" ريال":"مسدد"}</span></div>
+      <div class="dc-chips">
+        ${p.place?`<span class="chip cb"><i class="fas fa-location-dot"></i>${x(p.place)}</span>`:""}
+        ${p.phone?`<span class="chip cb"><i class="fas fa-phone"></i>${x(p.phone)}</span>`:""}
+        ${p.assignedToName?`<span class="chip co"><i class="fas fa-user-check"></i>${x(p.assignedToName)}</span>`:""}
+      </div>
+      <div class="dc-fin">
+        <span>المبلغ: <strong>${p.amount||0}</strong></span>
+        <span>الواصل: <strong>${p.deposit||0}</strong></span>
+        <span style="color:var(--err);font-weight:800">المتبقي: ${p.remaining||0}</span>
+        ${exps?`<span style="color:var(--muted);font-size:.68rem;width:100%">المصروفات: ${exps}</span>`:""}
+      </div>
+      <div class="dc-acts">
+        ${rem>0?`<button class="btn btn-success btn-sm" onclick="actPaid('${p.id}','${date}')"><i class="fas fa-check"></i> مسدد</button>`:""}
+        ${rem>0&&p.phone?`<button class="btn btn-warning btn-sm" onclick="actRemind('${x(p.phone)}','${x(p.name)}',${rem})"><i class="fas fa-bell"></i></button>`:""}
+        <button class="btn btn-info btn-sm text-white" onclick="actInv('${p.id}','${x(p.phone||"")}')"><i class="fas fa-receipt"></i></button>
+        <button class="btn btn-outline-warning btn-sm" onclick="actEdit(${JSON.stringify(p).replace(/"/g,"&quot;")})"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-outline-danger btn-sm" onclick="actDel('${p.id}','${date}')"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`;
+  }).join("");
 }
+
 
 function buildTypes(sel=""){
   if(!sel&&_types.length)sel=_types[0];
@@ -351,9 +395,10 @@ async function saveBooking(ev){
   Swal.fire({title:"جاري الحفظ...",allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
   try{
     await API.run(payload.id?"updateEvent":"addEvent",payload);
+    await bootstrapData();
     Swal.fire({title:"تم بنجاح",icon:"success",timer:1400,showConfirmButton:false});
     if(cal)cal.refetchEvents();const date=payload.date;resetForm();
-    document.getElementById("f-date").value=date;await loadDayList(date);
+    document.getElementById("f-date").value=date;renderDayList(date);
   }catch(e){Swal.fire("خطأ","تعذر حفظ الحجز","error");console.error(e)}
   finally{document.getElementById("save-txt").textContent="حفظ الحجز"}
 }
@@ -379,42 +424,57 @@ function actEdit(p){
 }
 
 async function actPaid(id,date){
-  const r=await Swal.fire({title:"تسجيل السداد؟",icon:"question",showCancelButton:true,confirmButtonText:"نعم",cancelButtonText:"الغاء",confirmButtonColor:"var(--ok)"});
+  const r=await Swal.fire({title:'تسجيل السداد؟',icon:'question',showCancelButton:true,confirmButtonText:'نعم',cancelButtonText:'الغاء',confirmButtonColor:'var(--ok)'});
   if(!r.isConfirmed)return;
-  Swal.fire({title:"جاري التحديث...",allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
-  try{await API.run("markPaid",id);Swal.fire({title:"تم السداد",icon:"success",timer:1400,showConfirmButton:false});if(cal)cal.refetchEvents();await loadDayList(date)}
-  catch(e){Swal.fire("خطأ","تعذر التحديث","error")}
+  Swal.fire({title:'جاري التحديث...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+  try{
+    await API.run('markPaid',id);
+    _allEvents=_allEvents.map(ev=>{
+      if(String(ev.extendedProps?.id||'')===String(id)){
+        const amount=parseFloat(ev.extendedProps?.amount||0);
+        return {...ev, extendedProps:{...(ev.extendedProps||{}),deposit:amount,remaining:0}};
+      }
+      return ev;
+    });
+    applyTypeFilter();
+    Swal.fire({title:'تم السداد',icon:'success',timer:1400,showConfirmButton:false});
+    if(cal)cal.refetchEvents();
+    renderDayList(date);
+  }catch(e){Swal.fire('خطأ','تعذر التحديث','error')}
 }
 function actRemind(phone,name,rem){
-  const txt=`مرحبا *${name}*\n\nتذكير بسداد المبلغ المتبقي:\n${rem} ريال\n\n${_cfg.agencyName||"وكالة ميديا"}`;
-  window.open(`https://wa.me/${np(phone)}?text=${encodeURIComponent(txt)}`,"_blank");
+  const tpl=getTemplateValue(TEMPLATE_KEYS.paymentReminder, `مرحبا {{name}}\n\nتذكير بسداد المبلغ المتبقي لحجزك: {{remaining}} ريال\n\n{{agencyName}}`);
+  const txt=fillTemplate(tpl,{name,remaining:rem,agencyName:_cfg.agencyName||'وكالة ميديا'});
+  window.open(`https://wa.me/${np(phone)}?text=${encodeURIComponent(txt)}`,'_blank');
 }
 async function actInv(id,phone){
-  Swal.fire({title:"جاري انشاء الفاتورة...",allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
-  try{const url=await API.run("generateInvoicePDF",id);Swal.close();const txt=`مرحبا\nفاتورة حجزك:\n${url}\n\n${_cfg.agencyName||"وكالة ميديا"}`;window.open(`https://wa.me/${np(phone)}?text=${encodeURIComponent(txt)}`,"_blank")}
-  catch(e){Swal.fire("خطأ","تعذر انشاء الفاتورة","error")}
+  Swal.fire({title:'جاري انشاء الفاتورة...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+  try{
+    const url=await API.run('generateInvoicePDF',id);
+    Swal.close();
+    const tpl=getTemplateValue(TEMPLATE_KEYS.invoiceSend, `مرحبا {{name}}\nفاتورة حجزك:\n{{invoiceUrl}}\n\n{{agencyName}}`);
+    const txt=fillTemplate(tpl,{invoiceUrl:url,agencyName:_cfg.agencyName||'وكالة ميديا',name:''});
+    window.open(`https://wa.me/${np(phone)}?text=${encodeURIComponent(txt)}`,'_blank');
+  }catch(e){Swal.fire('خطأ','تعذر انشاء الفاتورة','error')}
 }
 async function actDel(id,date){
   const r=await Swal.fire({title:"حذف الحجز؟",icon:"warning",showCancelButton:true,confirmButtonText:"نعم احذف",cancelButtonText:"الغاء",confirmButtonColor:"var(--err)"});
   if(!r.isConfirmed)return;
   Swal.fire({title:"جاري الحذف...",allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
-  try{await API.run("deleteEvent",id);Swal.fire({title:"تم الحذف",icon:"success",timer:1400,showConfirmButton:false});if(cal)cal.refetchEvents();await loadDayList(date)}
+  try{await API.run("deleteEvent",id);await bootstrapData();Swal.fire({title:"تم الحذف",icon:"success",timer:1400,showConfirmButton:false});if(cal)cal.refetchEvents();renderDayList(date)}
   catch(e){Swal.fire("خطأ","تعذر الحذف","error")}
 }
 
-async function loadTasks(){
+function renderTasksFromCache(){
   const up=document.getElementById("lst-up"),pa=document.getElementById("lst-pa");
-  up.innerHTML=pa.innerHTML=`<div class="ld"><div class="sp"></div></div>`;
-  try{
-    const{userCode,permissions}=Session.get();const all=permissions?.allPages===true;
-    document.getElementById("tk-ttl").textContent=all?"الاعمال المسندة (الجميع)":"الاعمال المسندة لي";
-    const res=await API.run("getAssignedBookings",userCode,all);
-    const u=res.upcoming||[],p=res.past||[];
-    document.getElementById("cnt-up").textContent=u.length;document.getElementById("cnt-pa").textContent=p.length;
-    up.innerHTML=u.length?u.map(b=>tkCard(b,false)).join(""):`<div class="empty"><i class="fas fa-calendar-check"></i><p>لا اعمال قادمة</p></div>`;
-    pa.innerHTML=p.length?p.map(b=>tkCard(b,true)).join(""):`<div class="empty"><i class="fas fa-clock-rotate-left"></i><p>لا اعمال سابقة</p></div>`;
-  }catch(e){up.innerHTML=`<div class="empty"><i class="fas fa-exclamation"></i><p>تعذر التحميل</p></div>`;pa.innerHTML=""}
+  const{permissions}=Session.get();const all=permissions?.allPages===true;
+  document.getElementById("tk-ttl").textContent=all?"الاعمال المسندة (الجميع)":"الاعمال المسندة لي";
+  const u=_tasksCache?.upcoming||[],p=_tasksCache?.past||[];
+  document.getElementById("cnt-up").textContent=u.length;document.getElementById("cnt-pa").textContent=p.length;
+  up.innerHTML=u.length?u.map(b=>tkCard(b,false)).join(""):`<div class="empty"><i class="fas fa-calendar-check"></i><p>لا اعمال قادمة</p></div>`;
+  pa.innerHTML=p.length?p.map(b=>tkCard(b,true)).join(""):`<div class="empty"><i class="fas fa-clock-rotate-left"></i><p>لا اعمال سابقة</p></div>`;
 }
+async function loadTasks(){ renderTasksFromCache(); }
 function tkCard(b,isPast){
   const mob=np(b.assignedToMobile||"");
   const waUrl=mob?`https://wa.me/${mob}?text=${encodeURIComponent(`مرحبا ${b.assignedToName||""}\nتذكير: ${b.customerName||""}\nالتاريخ: ${b.date}\nالمكان: ${b.place||""}`)}`:"";
