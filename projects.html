@@ -1,484 +1,559 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>لوحة التحكم</title>
+  <title>المشاريع</title>
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="config.js"></script>
+
   <style>
-    :root{--p:#014979;--p-dk:#013560;--p-lt:#e8f4fd;--gold:#c6a43f;--gold-lt:#fdf6e3;--gold-dk:#a68a2e;--ok:#059669;--ok-lt:#d1fae5;--err:#dc2626;--err-lt:#fee2e2;--warn:#d97706;--pur:#6d28d9;--pur-lt:#ede9fe;--bg:#f1f5f9;--card:#fff;--border:rgba(15,23,42,.07);--txt:#0f172a;--muted:#64748b;--r:.85rem;--r-lg:1.2rem;--sh:0 2px 12px rgba(15,23,42,.07);--sh-lg:0 8px 28px rgba(15,23,42,.11)}
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    html,body{font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--txt);font-size:14px;-webkit-tap-highlight-color:transparent}
+    :root{
+      --p:#014979; --p-dk:#013560; --p-lt:#e8f4fd;
+      --gold:#c6a43f; --gold-lt:#fdf6e3; --gold-dk:#a68a2e;
+      --ok:#059669; --ok-lt:#d1fae5;
+      --err:#dc2626; --err-lt:#fee2e2;
+      --warn:#d97706; --warn-lt:#ffedd5;
+      --pur:#7c3aed; --pur-lt:#ede9fe;
+      --bg:#f1f5f9; --card:#fff;
+      --txt:#0f172a; --muted:#64748b;
+      --border:rgba(15,23,42,.08);
+      --sh:0 4px 18px rgba(15,23,42,.07);
+      --sh-lg:0 10px 28px rgba(15,23,42,.12);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;font-family:'Tajawal',sans-serif;background:var(--bg);color:var(--txt)}
+    body{padding:1rem}
+    @media (max-width:768px){ body{padding:.75rem} }
 
-    .tab-bar{display:flex;gap:.35rem;padding:.55rem .7rem;background:var(--card);border-bottom:1px solid var(--border);overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:0;z-index:80;box-shadow:0 2px 8px rgba(15,23,42,.06)}
-    .tab-bar::-webkit-scrollbar{display:none}
-    .tb{flex-shrink:0;scroll-snap-align:start;display:inline-flex;align-items:center;gap:.32rem;padding:.42rem .82rem;border-radius:999px;border:1.5px solid var(--border);background:var(--bg);color:var(--muted);font-family:'Tajawal',sans-serif;font-size:.77rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s;user-select:none;-webkit-tap-highlight-color:transparent}
-    .tb i{font-size:.73rem}
-    .tb:active{transform:scale(.95)}
-    .tb.on{background:var(--p);color:#fff;border-color:var(--p);box-shadow:0 3px 10px rgba(1,73,121,.3)}
-    .tb[data-tab="tasks"].on{background:var(--ok);border-color:var(--ok);box-shadow:0 3px 10px rgba(5,150,105,.3)}
+    .top-nav{
+      position:sticky;top:0;z-index:1000;background:rgba(241,245,249,.92);
+      backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:1rem;
+      padding:.65rem;margin-bottom:1rem;box-shadow:var(--sh);
+    }
+    .top-nav-inner{display:flex;gap:.45rem;overflow:auto;scrollbar-width:none}
+    .top-nav-inner::-webkit-scrollbar{display:none}
+    .top-link{
+      flex:0 0 auto;display:inline-flex;align-items:center;gap:.4rem;padding:.65rem 1rem;border-radius:999px;
+      text-decoration:none;border:1px solid var(--border);background:#fff;color:var(--muted);font-weight:800;font-size:.88rem;white-space:nowrap;
+    }
+    .top-link.active{background:linear-gradient(135deg,var(--p),var(--gold));color:#fff;border-color:transparent;box-shadow:0 8px 18px rgba(1,73,121,.22)}
 
-    .pane{display:none;padding:.7rem;padding-bottom:max(.7rem,env(safe-area-inset-bottom))}
-    .pane.on{display:block}
+    .hero{
+      background:linear-gradient(135deg,#00243f 0%, #014979 52%, #026aa7 100%);
+      color:#fff;border-radius:1.5rem;padding:1.25rem 1.35rem;box-shadow:0 16px 36px rgba(1,73,121,.23);
+      margin-bottom:1rem;position:relative;overflow:hidden;
+    }
+    .hero::before{
+      content:"";position:absolute;inset-inline-end:-60px;top:-40px;width:180px;height:180px;border-radius:50%;
+      background:radial-gradient(circle, rgba(255,255,255,.2), transparent 68%);
+    }
+    .hero-title{font-weight:900;font-size:1.4rem;margin:0 0 .35rem}
+    .hero-sub{margin:0;color:rgba(255,255,255,.88);font-size:.92rem}
+    .hero-meta{margin-top:.85rem;display:flex;gap:.5rem;flex-wrap:wrap}
+    .hero-chip{
+      display:inline-flex;align-items:center;gap:.35rem;padding:.35rem .75rem;border-radius:999px;
+      background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);font-size:.8rem;font-weight:700
+    }
 
-    .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:.55rem;margin-bottom:.7rem}
-    @media(min-width:600px){.kpi-grid{grid-template-columns:repeat(4,1fr)}}
-    .kpi{background:var(--card);border-radius:var(--r-lg);padding:.8rem .88rem;border:1px solid var(--border);box-shadow:var(--sh);position:relative;overflow:hidden;transition:transform .18s,box-shadow .18s}
-    .kpi:active{transform:scale(.97)}
-    @media(hover:hover){.kpi:hover{transform:translateY(-3px);box-shadow:var(--sh-lg)}}
-    .kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r-lg) var(--r-lg) 0 0}
-    .kpi.kb::before{background:linear-gradient(90deg,var(--p),#38bdf8)}
-    .kpi.kg::before{background:linear-gradient(90deg,var(--gold-dk),var(--gold))}
-    .kpi.kk::before{background:linear-gradient(90deg,var(--ok),#34d399)}
-    .kpi.kp::before{background:linear-gradient(90deg,var(--pur),#a78bfa)}
-    .kico{position:absolute;left:-.3rem;bottom:-.4rem;font-size:3rem;opacity:.06;pointer-events:none;transition:transform .28s,opacity .28s}
-    @media(hover:hover){.kpi:hover .kico{transform:scale(1.12) rotate(-8deg);opacity:.1}}
-    .kl{font-size:.68rem;font-weight:700;color:var(--muted);margin-bottom:.22rem}
-    .kv{font-size:1.4rem;font-weight:900;line-height:1}
-    .kpi.kb .kv{color:var(--p)}.kpi.kg .kv{color:var(--gold-dk)}.kpi.kk .kv{color:var(--ok)}.kpi.kp .kv{color:var(--pur)}
-    .ks{font-size:.66rem;color:var(--muted);margin-top:.2rem}
+    .summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem;margin-bottom:1rem}
+    @media(max-width:992px){ .summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+    @media(max-width:560px){ .summary-grid{grid-template-columns:1fr} }
+    .summary-card{
+      background:var(--card);border:1px solid var(--border);border-radius:1.25rem;box-shadow:var(--sh);padding:1rem;position:relative;overflow:hidden
+    }
+    .summary-card::before{
+      content:"";position:absolute;inset-inline-start:0;top:0;width:100%;height:4px;background:linear-gradient(90deg,var(--p),#38bdf8)
+    }
+    .summary-card.k2::before{ background:linear-gradient(90deg,var(--ok),#34d399) }
+    .summary-card.k3::before{ background:linear-gradient(90deg,var(--gold-dk),var(--gold)) }
+    .summary-card.k4::before{ background:linear-gradient(90deg,var(--pur),#a78bfa) }
+    .summary-label{font-size:.8rem;color:var(--muted);font-weight:700}
+    .summary-value{font-size:1.55rem;font-weight:900;margin:.25rem 0 .1rem}
+    .summary-note{font-size:.76rem;color:var(--muted)}
+    .summary-icon{position:absolute;inset-inline-end:-4px;bottom:-10px;font-size:3.4rem;opacity:.06;pointer-events:none}
 
-    .box{background:var(--card);border-radius:var(--r-lg);border:1px solid var(--border);box-shadow:var(--sh);overflow:hidden;margin-bottom:.7rem}
-    .bh{padding:.6rem .85rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:.5rem;background:linear-gradient(180deg,#fff 0%,#f8fafc 100%)}
-    .bt{font-weight:800;font-size:.83rem;color:var(--p);display:flex;align-items:center;gap:.38rem}
-    .bb{padding:.7rem .85rem}
+    .box{
+      background:var(--card);border:1px solid var(--border);border-radius:1.25rem;box-shadow:var(--sh);margin-bottom:1rem;overflow:hidden
+    }
+    .box-head{
+      display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;
+      padding:.95rem 1rem;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#fff 0%,#f8fafc 100%)
+    }
+    .box-title{font-weight:900;color:var(--p);font-size:1rem;margin:0}
+    .box-body{padding:1rem}
+    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:.85rem}
+    .toolbar-group{display:flex;gap:.55rem;flex-wrap:wrap;align-items:center}
 
-    .chip{display:inline-flex;align-items:center;gap:.22rem;padding:.18rem .52rem;border-radius:999px;font-size:.68rem;font-weight:700;border:1px solid transparent;white-space:nowrap}
-    .cb{background:var(--p-lt);color:var(--p);border-color:rgba(1,73,121,.15)}
-    .cg{background:var(--ok-lt);color:var(--ok);border-color:rgba(5,150,105,.15)}
-    .co{background:var(--gold-lt);color:var(--gold-dk);border-color:rgba(198,164,63,.2)}
-    .cr{background:var(--err-lt);color:var(--err);border-color:rgba(220,38,38,.15)}
-    .cm{background:#f1f5f9;color:var(--muted);border-color:var(--border)}
+    .form-control,.form-select{border-radius:.9rem;padding:.7rem .9rem;border-color:#dbe4ee}
+    .form-control:focus,.form-select:focus{border-color:rgba(1,73,121,.35);box-shadow:0 0 0 .2rem rgba(1,73,121,.12)}
+    .btn{border-radius:.9rem;font-weight:800}
+    .btn-main{background:var(--p);color:#fff}
+    .btn-main:hover{background:var(--p-dk);color:#fff}
+    .btn-soft{background:#f8fafc;border:1px solid var(--border);color:#334155}
+    .btn-soft:hover{background:#eef2f7}
 
-    .prog{background:#e2e8f0;border-radius:999px;height:8px;overflow:hidden;margin:.38rem 0}
-    .pf{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--ok),#34d399);transition:width .7s ease}
+    .chip{
+      display:inline-flex;align-items:center;gap:.32rem;padding:.2rem .55rem;border-radius:999px;font-size:.72rem;font-weight:800;border:1px solid transparent;white-space:nowrap
+    }
+    .chip.ok{background:var(--ok-lt);color:var(--ok);border-color:rgba(5,150,105,.16)}
+    .chip.warn{background:var(--warn-lt);color:var(--warn);border-color:rgba(217,119,6,.15)}
+    .chip.base{background:var(--p-lt);color:var(--p);border-color:rgba(1,73,121,.14)}
+    .chip.gray{background:#f1f5f9;color:#475569;border-color:#e2e8f0}
 
-    .bm{padding:.58rem .72rem;border-radius:var(--r);border:1px solid var(--border);background:#f8fafc;margin-bottom:.42rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem}
-    .bm-n{font-weight:800;font-size:.82rem;color:var(--p)}
-    .bm-m{font-size:.68rem;color:var(--muted);margin-top:.1rem}
-    .bm-r{font-size:.76rem;font-weight:800;white-space:nowrap;padding:.14rem .42rem;border-radius:999px}
+    .card-list{display:grid;gap:.75rem}
+    .mobile-card{border:1px solid var(--border);border-radius:1rem;background:#fff;padding:.9rem;box-shadow:var(--sh)}
+    .mobile-card .head{display:flex;justify-content:space-between;gap:.75rem;align-items:flex-start;margin-bottom:.45rem}
+    .mobile-card .title{font-weight:900;color:var(--p)}
+    .mobile-card .line{font-size:.83rem;margin-top:.25rem}
+    .mobile-actions{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.75rem}
 
-    .fc{--fc-border-color:rgba(148,163,184,.18);--fc-today-bg-color:rgba(1,73,121,.06);font-family:'Tajawal',sans-serif;font-size:.8rem}
-    .fc .fc-toolbar-title{font-size:.92rem;font-weight:800;color:var(--p)}
-    .fc .fc-button-primary{background:var(--p)!important;border-color:var(--p)!important;border-radius:.5rem!important;font-weight:700;font-size:.73rem;padding:.28rem .6rem}
-    .fc .fc-button-primary.fc-button-active{background:var(--gold-dk)!important;border-color:var(--gold-dk)!important}
-    .fc .fc-col-header-cell-cushion{font-weight:800;color:var(--p);font-size:.7rem;text-decoration:none;padding:.42rem 0}
-    .fc .fc-daygrid-day-number{text-decoration:none;color:var(--txt);font-weight:600;font-size:.72rem}
-    .fc .fc-daygrid-event{border-radius:.35rem;border:none;padding:1px 4px;font-size:.68rem;font-weight:700}
-    .fc .fc-toolbar.fc-header-toolbar{margin-bottom:.55rem;gap:.38rem;flex-wrap:wrap;padding:.45rem;background:#f8fafc;border-radius:var(--r-lg) var(--r-lg) 0 0}
-    .fc .fc-scrollgrid{border-radius:0 0 var(--r-lg) var(--r-lg);overflow:hidden}
+    .table-wrap{width:100%;overflow:auto;border-radius:1rem;border:1px solid var(--border)}
+    .table{margin-bottom:0}
+    .table thead th{background:#f8fafc;color:#334155;font-weight:900;white-space:nowrap;font-size:.84rem}
+    .table td{vertical-align:middle;font-size:.84rem}
+    .table-actions{display:flex;gap:.35rem;flex-wrap:wrap}
 
-    .modal-content{border-radius:1.25rem;border:none;box-shadow:0 24px 64px rgba(0,0,0,.18)}
-    .mh{background:linear-gradient(135deg,var(--p) 0%,#026aa7 100%);color:#fff;padding:.8rem .95rem;border-radius:1.25rem 1.25rem 0 0;display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:.92rem}
-    .mh .btn-close{filter:brightness(0) invert(1);opacity:.9}
-    .mb{padding:.8rem;background:#f8fafc}
+    .empty{border:1px dashed #cbd5e1;border-radius:1rem;padding:1.2rem;text-align:center;color:var(--muted);background:#fff}
+    .hidden-mobile{display:table}
+    .hidden-desktop{display:none}
+    @media(max-width:991.98px){
+      .hidden-mobile{display:none !important}
+      .hidden-desktop{display:block !important}
+    }
 
-    .fs{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:.7rem;margin-bottom:.55rem}
-    .fl{font-size:.72rem;font-weight:700;color:var(--txt);margin-bottom:.28rem;display:block}
-    .form-control,.form-select{font-family:'Tajawal',sans-serif;font-size:.82rem;border-color:var(--border);border-radius:var(--r);padding:.46rem .7rem}
-    .form-control:focus,.form-select:focus{border-color:var(--p);box-shadow:0 0 0 .18rem rgba(1,73,121,.12)}
-
-    .tg-grp{display:flex;flex-wrap:wrap;gap:.32rem}
-    .tg{padding:.32rem .72rem;border-radius:999px;border:1.5px solid var(--border);background:var(--bg);color:var(--muted);font-family:'Tajawal',sans-serif;font-size:.73rem;font-weight:700;cursor:pointer;transition:all .13s;user-select:none;-webkit-tap-highlight-color:transparent}
-    .tg:active{transform:scale(.94)}
-    .tg.st{background:var(--p);color:#fff;border-color:var(--p);box-shadow:0 2px 8px rgba(1,73,121,.25)}
-    .tg.ss{background:var(--gold-lt);color:var(--gold-dk);border-color:var(--gold)}
-
-    .er{display:grid;grid-template-columns:1fr .9fr .7fr auto;gap:.32rem;align-items:center;margin-bottom:.32rem}
-    @media(max-width:400px){.er{grid-template-columns:1fr 1fr}.er .ed{grid-column:span 2;justify-self:end}}
-    .er .form-control,.er .form-select{font-size:.75rem;padding:.35rem .5rem}
-    .ed{width:28px;height:28px;border-radius:.42rem;border:1px solid var(--border);background:var(--err-lt);color:var(--err);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.72rem;flex-shrink:0}
-
-    .fin-g{display:grid;grid-template-columns:repeat(3,1fr);gap:.38rem}
-    @media(max-width:340px){.fin-g{grid-template-columns:1fr 1fr}}
-
-    .dc{background:#f8fafc;border:1px solid var(--border);border-radius:var(--r);padding:.7rem;margin-bottom:.48rem}
-    .dc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:.45rem;margin-bottom:.4rem}
-    .dc-name{font-weight:800;font-size:.88rem;color:var(--p)}
-    .dc-chips{display:flex;flex-wrap:wrap;gap:.22rem;margin-bottom:.4rem}
-    .dc-fin{background:#fff;border:1px dashed rgba(148,163,184,.28);border-radius:.52rem;padding:.42rem .58rem;font-size:.73rem;margin-bottom:.4rem;display:flex;flex-wrap:wrap;gap:.25rem .8rem}
-    .dc-fin span{display:flex;align-items:center;gap:.22rem}
-    .dc-acts{display:flex;flex-wrap:wrap;gap:.28rem}
-    .dc-acts .btn{font-size:.7rem;padding:.26rem .58rem;border-radius:.48rem;font-weight:700;font-family:'Tajawal',sans-serif}
-
-    .tc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:.72rem;margin-bottom:.48rem;border-right:3px solid var(--p)}
-    .tc.past{border-right-color:#cbd5e1}
-    .td{display:inline-flex;align-items:center;gap:.22rem;background:var(--p-lt);color:var(--p);border-radius:999px;padding:.16rem .52rem;font-size:.67rem;font-weight:700;margin-bottom:.35rem}
-    .tt{font-weight:800;font-size:.86rem;margin-bottom:.22rem}
-    .tm{font-size:.72rem;color:var(--muted)}
-    .ts{display:flex;flex-wrap:wrap;gap:.22rem;margin-top:.32rem}
-    .twa{display:inline-flex;align-items:center;gap:.28rem;margin-top:.42rem;padding:.28rem .7rem;border-radius:999px;background:#dcfce7;color:#15803d;font-size:.7rem;font-weight:700;text-decoration:none;border:1px solid rgba(21,128,61,.15)}
-
-    .empty{text-align:center;padding:1.8rem 1rem;color:var(--muted)}
-    .empty i{font-size:2rem;opacity:.22;display:block;margin-bottom:.55rem}
-    .empty p{font-size:.8rem}
-    .ld{display:flex;align-items:center;justify-content:center;padding:1.4rem}
-    .sp{width:26px;height:26px;border:3px solid var(--p-lt);border-top-color:var(--p);border-radius:50%;animation:spin .7s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
-
-    .g2{display:grid;grid-template-columns:1fr 1fr;gap:.45rem}
-    .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:.38rem}
-    @media(min-width:768px){.md2{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}}
-    .sep{display:flex;align-items:center;gap:.45rem;margin:.7rem 0;font-size:.7rem;color:var(--muted);font-weight:700}
-    .sep::before,.sep::after{content:"";flex:1;height:1px;background:var(--border)}
+    .steps-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.6rem}
+    .step-item{
+      border:1px solid var(--border);background:#fff;border-radius:.9rem;padding:.7rem .85rem;
+      display:flex;align-items:center;gap:.55rem;font-weight:700;color:#334155
+    }
+    .text-num{font-variant-numeric:tabular-nums}
   </style>
 </head>
 <body>
-
-<div class="tab-bar">
-  <button class="tb on" data-tab="dash"     onclick="goTab('dash')">    <i class="fas fa-gauge"></i> لوحة التحكم</button>
-  <button class="tb"    data-tab="calendar" onclick="goTab('calendar')"><i class="fas fa-calendar-alt"></i> الحجوزات</button>
-  <button class="tb"    data-tab="tasks"    onclick="goTab('tasks')">   <i class="fas fa-list-check"></i> المسندة لي</button>
-</div>
-
-<div class="pane on" id="pane-dash">
-  <div class="kpi-grid">
-    <div class="kpi kb"><div class="kl">الحجوزات</div><div class="kv" id="k-bk">--</div><div class="ks">اجمالي مسجل</div><i class="fas fa-calendar-days kico"></i></div>
-    <div class="kpi kg"><div class="kl">الايرادات</div><div class="kv" id="k-rv">--</div><div class="ks">ريال سعودي</div><i class="fas fa-sack-dollar kico"></i></div>
-    <div class="kpi kp"><div class="kl">المستحقات</div><div class="kv" id="k-rc">--</div><div class="ks">قيد التحصيل</div><i class="fas fa-circle-exclamation kico"></i></div>
-    <div class="kpi kk"><div class="kl">صافي الربح</div><div class="kv" id="k-nt">--</div><div class="ks">بعد المصروفات</div><i class="fas fa-chart-line kico"></i></div>
+  <div class="top-nav">
+    <div class="top-nav-inner" id="topPageNav"></div>
   </div>
-  <div class="md2">
-    <div class="box">
-      <div class="bh"><div class="bt"><i class="fas fa-bullseye" style="color:var(--ok)"></i> المستهدف الشهري</div><span class="chip cg" id="t-lbl">--</span></div>
-      <div class="bb">
-        <div class="g3" style="margin-bottom:.5rem">
-          <div style="text-align:center"><div style="font-size:.65rem;color:var(--muted);font-weight:700;margin-bottom:.18rem">المستهدف</div><div style="font-size:.95rem;font-weight:900;color:var(--p)" id="t-tgt">--</div></div>
-          <div style="text-align:center"><div style="font-size:.65rem;color:var(--muted);font-weight:700;margin-bottom:.18rem">المحقق</div><div style="font-size:.95rem;font-weight:900;color:var(--ok)" id="t-ach">--</div></div>
-          <div style="text-align:center"><div style="font-size:.65rem;color:var(--muted);font-weight:700;margin-bottom:.18rem">المتبقي</div><div style="font-size:.95rem;font-weight:900;color:var(--warn)" id="t-rem">--</div></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:.66rem;color:var(--muted);margin-bottom:.22rem"><span>الانجاز</span><span id="t-pct">0%</span></div>
-        <div class="prog"><div class="pf" id="t-bar" style="width:0%"></div></div>
-        <div style="text-align:left;margin-top:.38rem"><span class="chip cb"><i class="fas fa-clock"></i> تبقى <span id="d-left">0</span> يوم</span></div>
-      </div>
-    </div>
-    <div class="box">
-      <div class="bh"><div class="bt"><i class="fas fa-calendar-day" style="color:var(--gold-dk)"></i> اقرب الحجوزات</div><span class="chip co" id="td-lbl">--</span></div>
-      <div class="bb" id="td-list" style="max-height:210px;overflow-y:auto"><div class="ld"><div class="sp"></div></div></div>
-    </div>
-  </div>
-</div>
 
-<div class="pane" id="pane-calendar">
+  <section class="hero">
+    <h1 class="hero-title"><i class="fa-solid fa-diagram-project me-2"></i>المشاريع</h1>
+    <p class="hero-sub">إدارة المشاريع، متابعة الحالة حسب الخطوات المعرفة من الإعدادات، وإضافة وتعديل وحذف المشاريع.</p>
+    <div class="hero-meta">
+      <span class="hero-chip"><i class="fa-solid fa-building"></i> <span id="agencyNameHero">وكالة ميديا</span></span>
+      <span class="hero-chip"><i class="fa-solid fa-user"></i> <span id="currentUserHero">—</span></span>
+      <span class="hero-chip"><i class="fa-solid fa-list-check"></i> <span id="stepsCountHero">0</span> خطوة</span>
+    </div>
+  </section>
+
+  <section class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-label">عدد المشاريع</div>
+      <div class="summary-value text-num" id="sumProjects">0</div>
+      <div class="summary-note">كل السجلات</div>
+      <i class="fa-solid fa-briefcase summary-icon"></i>
+    </div>
+    <div class="summary-card k2">
+      <div class="summary-label">قيد التنفيذ</div>
+      <div class="summary-value text-num" id="sumActive">0</div>
+      <div class="summary-note">بحسب خطوات المشروع</div>
+      <i class="fa-solid fa-spinner summary-icon"></i>
+    </div>
+    <div class="summary-card k3">
+      <div class="summary-label">المكتملة</div>
+      <div class="summary-value text-num" id="sumDone">0</div>
+      <div class="summary-note">منتهية بالكامل</div>
+      <i class="fa-solid fa-circle-check summary-icon"></i>
+    </div>
+    <div class="summary-card k4">
+      <div class="summary-label">الإجمالي التقديري</div>
+      <div class="summary-value text-num" id="sumValue">0</div>
+      <div class="summary-note">من قيمة المشاريع إن وجدت</div>
+      <i class="fa-solid fa-sack-dollar summary-icon"></i>
+    </div>
+  </section>
+
   <div class="box">
-    <div class="bh"><div class="bt"><i class="fas fa-calendar-check"></i> ادارة الحجوزات</div><span class="chip cb"><i class="fas fa-hand-pointer"></i> اضغط على يوم</span></div>
-    <div style="padding:.55rem"><div id="calendar"></div></div>
-  </div>
-</div>
-
-<div class="pane" id="pane-tasks">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
-    <div style="font-weight:800;color:var(--p);font-size:.9rem"><i class="fas fa-list-check me-1"></i><span id="tk-ttl">الاعمال المسندة</span></div>
-    <button class="tb" onclick="loadTasks()" style="font-size:.7rem;padding:.3rem .68rem"><i class="fas fa-rotate"></i> تحديث</button>
-  </div>
-  <div class="md2">
-    <div class="box">
-      <div class="bh"><div class="bt"><i class="fas fa-calendar-check" style="color:var(--ok)"></i> القادمة</div><span class="chip cg" id="cnt-up">0</span></div>
-      <div class="bb" id="lst-up" style="max-height:520px;overflow-y:auto"><div class="ld"><div class="sp"></div></div></div>
+    <div class="box-head">
+      <h2 class="box-title"><i class="fa-solid fa-list-check me-2"></i>خطوات المشاريع المعتمدة</h2>
     </div>
-    <div class="box">
-      <div class="bh"><div class="bt"><i class="fas fa-clock-rotate-left" style="color:var(--muted)"></i> السابقة</div><span class="chip cm" id="cnt-pa">0</span></div>
-      <div class="bb" id="lst-pa" style="max-height:520px;overflow-y:auto"><div class="ld"><div class="sp"></div></div></div>
+    <div class="box-body">
+      <div id="stepsWrap" class="steps-wrap"></div>
     </div>
   </div>
-</div>
 
-<div class="modal fade" id="bModal" tabindex="-1">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="mh">
-        <div style="display:flex;align-items:center;gap:.42rem"><i class="fas fa-calendar-plus"></i><span id="m-ttl">حجوزات اليوم</span></div>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+  <div class="box">
+    <div class="box-head">
+      <h2 class="box-title"><i class="fa-solid fa-table me-2"></i>قائمة المشاريع</h2>
+      <button class="btn btn-main" onclick="openProjectModal()"><i class="fa-solid fa-plus me-1"></i> إضافة مشروع</button>
+    </div>
+    <div class="box-body">
+      <div class="toolbar">
+        <div class="toolbar-group">
+          <input id="searchInput" type="text" class="form-control" placeholder="بحث باسم المشروع..." style="min-width:240px">
+          <select id="statusFilter" class="form-select" style="min-width:180px">
+            <option value="">كل الحالات</option>
+            <option value="جديد">جديد</option>
+            <option value="قيد التنفيذ">قيد التنفيذ</option>
+            <option value="مكتمل">مكتمل</option>
+          </select>
+        </div>
+        <div class="toolbar-group">
+          <button class="btn btn-soft" onclick="loadProjects()"><i class="fa-solid fa-rotate me-1"></i> تحديث</button>
+        </div>
       </div>
-      <div class="mb">
-        <div id="day-list"></div>
-        <div class="sep"><i class="fas fa-plus-circle"></i> اضافة حجز جديد</div>
-        <form id="bForm" autocomplete="off">
-          <input type="hidden" id="f-id">
-          <div class="fs">
-            <label class="fl"><i class="fas fa-tag" style="color:var(--p)"></i> نوع الحجز</label>
-            <div class="tg-grp" id="type-btns"></div>
-            <input type="hidden" id="f-type">
-          </div>
-          <div class="fs">
-            <label class="fl"><i class="fas fa-user" style="color:var(--p)"></i> بيانات العميل</label>
-            <div class="g2" style="margin-bottom:.38rem">
-              <div><label class="fl">الاسم *</label><input type="text" id="f-name" class="form-control" required></div>
-              <div><label class="fl">الهاتف</label><input type="tel" id="f-phone" class="form-control" dir="ltr" style="text-align:right"></div>
+
+      <div class="card-list hidden-desktop" id="projectsCardsContainer"></div>
+
+      <div class="table-wrap hidden-mobile">
+        <table class="table table-striped align-middle" id="projectsTable">
+          <thead>
+            <tr id="projectsHeadRow">
+              <th>اسم المشروع</th>
+              <th>الحالة</th>
+              <th>القيمة</th>
+              <th>تاريخ البداية</th>
+              <th>آخر تحديث</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div id="emptyState" class="empty d-none">لا توجد مشاريع مطابقة.</div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="projectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header text-white" style="background:linear-gradient(135deg,var(--p),var(--gold))">
+          <h5 class="modal-title" id="projectModalTitle">إضافة مشروع</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="projectForm" class="row g-3">
+            <input type="hidden" id="projectId">
+
+            <div class="col-md-6">
+              <label class="form-label">اسم المشروع *</label>
+              <input type="text" id="projectName" class="form-control" required>
             </div>
-            <div class="g2">
-              <div><label class="fl">التاريخ *</label><input type="date" id="f-date" class="form-control" required></div>
-              <div><label class="fl">الوقت</label><input type="time" id="f-time" class="form-control"></div>
+
+            <div class="col-md-6">
+              <label class="form-label">قيمة المشروع</label>
+              <input type="number" id="projectValue" class="form-control" min="0">
             </div>
-          </div>
-          <div class="fs">
-            <div class="g2">
-              <div><label class="fl"><i class="fas fa-location-dot" style="color:var(--p)"></i> المكان</label><input type="text" id="f-place" class="form-control"></div>
-              <div><label class="fl"><i class="fas fa-user-check" style="color:var(--ok)"></i> المسند الى</label><select id="f-assigned" class="form-select"><option value="">-- بدون اسناد --</option></select></div>
+
+            <div class="col-md-6">
+              <label class="form-label">حالة الإنهاء</label>
+              <select id="projectEnded" class="form-select">
+                <option value="false">غير منتهٍ</option>
+                <option value="true">مكتمل</option>
+              </select>
             </div>
-          </div>
-          <div class="fs">
-            <label class="fl"><i class="fas fa-camera" style="color:var(--gold-dk)"></i> الخدمات الاضافية</label>
-            <div class="tg-grp" id="srv-btns"></div>
-          </div>
-          <div class="fs">
-            <label class="fl"><i class="fas fa-align-right" style="color:var(--muted)"></i> تفاصيل اضافية</label>
-            <textarea id="f-details" class="form-control" rows="2" style="resize:none"></textarea>
-          </div>
-          <div class="fs">
-            <label class="fl"><i class="fas fa-coins" style="color:var(--gold-dk)"></i> المالية</label>
-            <div class="fin-g" style="margin-bottom:.48rem">
-              <div><label class="fl">المبلغ</label><input type="number" id="f-amount" class="form-control" min="0" oninput="calcFin()"></div>
-              <div><label class="fl">الواصل</label><input type="number" id="f-deposit" class="form-control" min="0" oninput="calcFin()"></div>
-              <div><label class="fl">المتبقي</label><input id="f-rem" class="form-control" readonly style="background:#fff8f8;font-weight:800;color:var(--err)"></div>
+
+            <div class="col-12">
+              <label class="form-label">الخطوات</label>
+              <div id="projectStepsForm" class="steps-wrap"></div>
             </div>
-            <label class="fl"><i class="fas fa-receipt" style="color:var(--muted)"></i> المصروفات</label>
-            <div id="exp-rows"></div>
-            <button type="button" onclick="addExpRow()" class="tb" style="font-size:.7rem;padding:.26rem .68rem;margin-top:.28rem"><i class="fas fa-plus"></i> اضافة مصروف</button>
-            <div style="margin-top:.48rem">
-              <label class="fl">صافي الربح</label>
-              <input id="f-net" class="form-control" readonly style="background:#f0fdf4;font-weight:800;color:var(--ok)">
-            </div>
-          </div>
-          <button type="submit" class="btn btn-success w-100 mt-1" style="font-size:.86rem;padding:.62rem;border-radius:var(--r);font-weight:800;font-family:'Tajawal',sans-serif">
-            <i class="fas fa-save me-1"></i><span id="save-txt">حفظ الحجز</span>
-          </button>
-        </form>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-soft" data-bs-dismiss="modal">إغلاق</button>
+          <button type="button" class="btn btn-main" onclick="saveProject()">حفظ المشروع</button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-<script src="config.js"></script>
-<script>
-let cal,bModal,_cfg={},_types=[],_srv=[],_users=[],_calOk=false;
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let _settings = {};
+    let _steps = [];
+    let _projects = [];
+    let _filtered = [];
+    let projectModal = null;
 
-function goTab(id){
-  document.querySelectorAll(".tb[data-tab]").forEach(b=>b.classList.toggle("on",b.dataset.tab===id));
-  document.querySelectorAll(".pane").forEach(p=>p.classList.toggle("on",p.id==="pane-"+id));
-  if(id==="calendar"&&!_calOk){initCal();_calOk=true}
-  if(id==="tasks")loadTasks();
-}
+    function fmt(v){ return Number(v || 0).toLocaleString('ar-SA'); }
+    function esc(t){ return String(t ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+    function num(v){ return Number(v || 0) || 0; }
 
-document.addEventListener("DOMContentLoaded",async()=>{
-  bModal=new bootstrap.Modal(document.getElementById("bModal"));
-  document.getElementById("bModal").addEventListener("hidden.bs.modal",resetForm);
-  document.getElementById("bForm").addEventListener("submit",saveBooking);
-  await Promise.all([loadCfg(),loadUsers()]);
-  loadDash();
-});
+    function buildTopNav(){
+      const nav = document.getElementById('topPageNav');
+      const pages = [
+        { id:'dashboard', label:'لوحة التحكم', icon:'fa-gauge', href:'dashboard.html' },
+        { id:'bookings', label:'الحجوزات', icon:'fa-calendar-check', href:'bookings.html' },
+        { id:'finance', label:'المالية', icon:'fa-wallet', href:'finance.html' },
+        { id:'projects', label:'المشاريع', icon:'fa-diagram-project', href:'projects.html', active:true },
+        { id:'settings', label:'الإعدادات', icon:'fa-gear', href:'settings.html' }
+      ];
+      nav.innerHTML = pages.map(p => `
+        <a class="top-link ${p.active ? 'active' : ''}" href="${p.href}">
+          <i class="fa-solid ${p.icon}"></i> ${p.label}
+        </a>
+      `).join('');
+    }
 
-async function loadCfg(){
-  try{_cfg=await API.run("getSystemSettings");_types=_cfg.bookingTypes||["زواج","تغطية","إعلان"];_srv=_cfg.bookingExtraServices||["صور","فيديو","درون"]}
-  catch(e){_types=["زواج","تغطية","إعلان"];_srv=["صور","فيديو","درون"]}
-}
-async function loadUsers(){
-  try{
-    const r=await API.run("getAllUsersData");_users=(r.users||[]).filter(u=>u.status==="فعال");
-    const sel=document.getElementById("f-assigned");
-    sel.innerHTML=`<option value="">-- بدون اسناد --</option>`;
-    _users.forEach(u=>sel.insertAdjacentHTML("beforeend",`<option value="${x(u.code)}">${x(u.name)}</option>`));
-  }catch(e){}
-}
+    function getProjectName(p){
+      return String(p?.['اسم_المشروع'] ?? p?.['اسم المشروع'] ?? p?.name ?? '');
+    }
+    function getProjectValue(p){
+      const keys = ['قيمة_المشروع','قيمة المشروع','المبلغ','قيمة_العقد','قيمة العقد','سعر_المشروع','سعر المشروع'];
+      for (const k of keys){
+        if (p && p[k] !== undefined && p[k] !== null && String(p[k]).trim() !== '') return num(p[k]);
+      }
+      return 0;
+    }
+    function boolVal(v){
+      return v === true || String(v).toLowerCase() === 'true';
+    }
+    function getProjectStatus(p){
+      const ended = boolVal(p?.['إنهاء_المشروع']) || boolVal(p?.['إنهاء المشروع']);
+      if (ended) return 'مكتمل';
+      if (!_steps.length) return 'قيد التنفيذ';
+      const doneCount = _steps.filter(step => boolVal(p?.[step])).length;
+      if (doneCount === 0) return 'جديد';
+      if (doneCount === _steps.length) return 'مكتمل';
+      return 'قيد التنفيذ';
+    }
 
-async function loadDash(){
-  try{
-    const s=await API.run("getDashboardStats");
-    $s("k-bk",s.totalBookings||0);$s("k-rv",n(s.totalRevenue));$s("k-rc",n(s.totalReceivables));$s("k-nt",n(s.netProfit));
-    $s("t-lbl",s.monthLabel||"--");$s("t-tgt",n(s.monthTarget));$s("t-ach",n(s.monthAchieved));$s("t-rem",n(s.monthRemaining));
-    $s("t-pct",(s.monthPercent||0)+"%");$s("d-left",dleft());$s("td-lbl",s.todaysLabel||"--");
-    document.getElementById("t-bar").style.width=Math.min(100,parseFloat(s.monthPercent)||0)+"%";
-    renderTd(s.todaysBookings||[]);
-  }catch(e){console.error(e)}
-}
-function renderTd(list){
-  const el=document.getElementById("td-list");
-  if(!list.length){el.innerHTML=`<div class="empty"><i class="fas fa-calendar-xmark"></i><p>لا حجوزات خلال 3 ايام</p></div>`;return}
-  el.innerHTML=list.map(b=>`<div class="bm"><div><div class="bm-n">${x(b.name)}</div><div class="bm-m">${x(b.type)} - ${x(b.date)}${b.time?" - "+x(b.time):""}${b.assignedTo?" - "+x(b.assignedTo):""}</div></div><div class="bm-r ${+b.remaining?"cr":"cg"}">${+b.remaining?n(b.remaining)+" ريال":"تم السداد"}</div></div>`).join("");
-}
+    async function safeApi(fn, ...args){
+      try{
+        return await API.run(fn, ...args);
+      }catch(e){
+        console.error(e);
+        Toast.error(e.message || 'تعذر تنفيذ العملية');
+        throw e;
+      }
+    }
 
-function initCal(){
-  cal=new FullCalendar.Calendar(document.getElementById("calendar"),{
-    initialView:"dayGridMonth",locale:"ar",direction:"rtl",firstDay:0,height:"auto",
-    headerToolbar:{left:"dayGridMonth today",center:"title",right:"prev,next"},
-    buttonText:{today:"اليوم",month:"شهر"},displayEventTime:false,
-    events:(i,ok,fail)=>API.run("getEvents").then(ok).catch(fail),
-    dateClick:i=>openModal(i.dateStr.substring(0,10)),
-    eventClick:i=>openModal(i.event.startStr.substring(0,10)),
-  });
-  cal.render();
-  const adapt=()=>cal.setOption("headerToolbar",window.innerWidth<520?{left:"title",center:"",right:"prev,next"}:{left:"dayGridMonth today",center:"title",right:"prev,next"});
-  adapt();window.addEventListener("resize",adapt);
-}
+    async function initPage(){
+      buildTopNav();
+      projectModal = new bootstrap.Modal(document.getElementById('projectModal'));
 
-async function openModal(date){
-  resetForm();document.getElementById("f-date").value=date;document.getElementById("m-ttl").textContent="📅 "+date;
-  buildTypes();buildSrv([]);bModal.show();await loadDayList(date);
-}
-async function loadDayList(date){
-  const el=document.getElementById("day-list");
-  el.innerHTML=`<div class="ld"><div class="sp"></div></div>`;
-  try{
-    const all=await API.run("getEvents");
-    const day=all.filter(e=>(e.start||"").substring(0,10)===date);
-    if(!day.length){el.innerHTML="";return}
-    el.innerHTML=day.map(ev=>{
-      const p=ev.extendedProps||{};const rem=parseFloat(p.remaining||0);
-      const exps=(p.expenses||[]).map(e=>`${x(e.reason||"")}(${x(e.type)}:${e.value})`).join(" | ");
-      return`<div class="dc">
-        <div class="dc-top"><div class="dc-name">${x(p.name||"")} - ${x(p.type||"")}</div><span class="chip ${rem>0?"cr":"cg"}">${rem>0?n(rem)+" ريال":"مسدد"}</span></div>
-        <div class="dc-chips">
-          ${p.place?`<span class="chip cb"><i class="fas fa-location-dot"></i>${x(p.place)}</span>`:""}
-          ${p.phone?`<span class="chip cb"><i class="fas fa-phone"></i>${x(p.phone)}</span>`:""}
-          ${p.assignedToName?`<span class="chip co"><i class="fas fa-user-check"></i>${x(p.assignedToName)}</span>`:""}
-        </div>
-        <div class="dc-fin">
-          <span>المبلغ: <strong>${p.amount||0}</strong></span>
-          <span>الواصل: <strong>${p.deposit||0}</strong></span>
-          <span style="color:var(--err);font-weight:800">المتبقي: ${p.remaining||0}</span>
-          ${exps?`<span style="color:var(--muted);font-size:.68rem;width:100%">المصروفات: ${exps}</span>`:""}
-        </div>
-        <div class="dc-acts">
-          ${rem>0?`<button class="btn btn-success btn-sm" onclick="actPaid('${p.id}','${date}')"><i class="fas fa-check"></i> مسدد</button>`:""}
-          ${rem>0&&p.phone?`<button class="btn btn-warning btn-sm" onclick="actRemind('${x(p.phone)}','${x(p.name)}',${rem})"><i class="fas fa-bell"></i></button>`:""}
-          <button class="btn btn-info btn-sm text-white" onclick="actInv('${p.id}','${x(p.phone||"")}')"><i class="fas fa-receipt"></i></button>
-          <button class="btn btn-outline-warning btn-sm" onclick="actEdit(${JSON.stringify(p).replace(/"/g,"&quot;")})"><i class="fas fa-edit"></i></button>
-          <button class="btn btn-outline-danger btn-sm" onclick="actDel('${p.id}','${date}')"><i class="fas fa-trash"></i></button>
-        </div>
-      </div>`;
-    }).join("");
-  }catch(e){el.innerHTML="";console.error(e)}
-}
+      const session = Session.get ? Session.get() : {};
+      document.getElementById('currentUserHero').textContent = session.userName || '—';
 
-function buildTypes(sel=""){
-  if(!sel&&_types.length)sel=_types[0];
-  document.getElementById("f-type").value=sel;
-  document.getElementById("type-btns").innerHTML=_types.map(t=>`<button type="button" class="tg ${t===sel?"st":""}" onclick="pickType('${x(t)}')">${x(t)}</button>`).join("");
-}
-function pickType(t){document.getElementById("f-type").value=t;document.querySelectorAll("#type-btns .tg").forEach(b=>b.classList.toggle("st",b.textContent.trim()===t))}
-function buildSrv(sel=[]){document.getElementById("srv-btns").innerHTML=_srv.map(s=>`<button type="button" class="tg ${sel.includes(s)?"ss":""}" onclick="this.classList.toggle('ss')">${x(s)}</button>`).join("")}
-function getSelSrv(){return Array.from(document.querySelectorAll("#srv-btns .tg.ss")).map(b=>b.textContent.trim())}
+      _settings = await safeApi('getSystemSettings');
+      _steps = Array.isArray(_settings?.projectSteps) ? _settings.projectSteps : [];
+      document.getElementById('stepsCountHero').textContent = _steps.length;
+      renderStepsShowcase();
+      bindEvents();
+      await loadProjects();
+    }
 
-function addExpRow(exp={}){
-  const c=document.getElementById("exp-rows"),d=document.createElement("div");d.className="er";
-  d.innerHTML=`<input class="form-control er-r" placeholder="السبب" value="${x(exp.reason||"")}"><select class="form-select er-t" onchange="calcFin()"><option value="">النوع</option><option value="مقطوع" ${exp.type==="مقطوع"?"selected":""}>مقطوع</option><option value="نسبة" ${exp.type==="نسبة"?"selected":""}>نسبة %</option></select><input type="number" class="form-control er-v" min="0" placeholder="0" value="${exp.value||""}" oninput="calcFin()"><button type="button" class="ed" onclick="this.closest('.er').remove();calcFin()"><i class="fas fa-times"></i></button>`;
-  c.appendChild(d);
-}
-function getExps(){return Array.from(document.querySelectorAll(".er")).map(r=>({reason:r.querySelector(".er-r").value.trim(),type:r.querySelector(".er-t").value,value:parseFloat(r.querySelector(".er-v").value)||0})).filter(e=>e.reason&&e.type)}
-function calcFin(){
-  const a=parseFloat(document.getElementById("f-amount").value)||0,d=parseFloat(document.getElementById("f-deposit").value)||0;
-  document.getElementById("f-rem").value=Math.max(0,a-d);
-  let exp=0;document.querySelectorAll(".er").forEach(r=>{const t=r.querySelector(".er-t").value,v=parseFloat(r.querySelector(".er-v").value)||0;if(t==="مقطوع")exp+=v;else if(t==="نسبة")exp+=a*(v/100)});
-  document.getElementById("f-net").value=Math.max(0,a-exp).toFixed(2);
-}
+    function renderStepsShowcase(){
+      const wrap = document.getElementById('stepsWrap');
+      if (!_steps.length){
+        wrap.innerHTML = '<div class="empty">لا توجد خطوات معرفة حاليًا في الإعدادات.</div>';
+        return;
+      }
+      wrap.innerHTML = _steps.map(s => `
+        <div class="step-item"><i class="fa-solid fa-check-double" style="color:var(--ok)"></i>${esc(s)}</div>
+      `).join('');
+    }
 
-async function saveBooking(ev){
-  ev.preventDefault();
-  const srvs=getSelSrv(),base=document.getElementById("f-details").value.trim();
-  const full=base?`${base} | خدمات: ${srvs.join(", ")||"لا يوجد"}`:`خدمات: ${srvs.join(", ")||"لا يوجد"}`;
-  const payload={
-    id:document.getElementById("f-id").value.trim(),type:document.getElementById("f-type").value,
-    name:document.getElementById("f-name").value.trim(),phone:document.getElementById("f-phone").value.trim(),
-    date:document.getElementById("f-date").value,place:document.getElementById("f-place").value.trim(),
-    time:document.getElementById("f-time").value,assignedTo:document.getElementById("f-assigned").value,
-    details:full,amount:document.getElementById("f-amount").value||0,deposit:document.getElementById("f-deposit").value||0,
-    expenses:JSON.stringify(getExps()),
-  };
-  if(!payload.type||!payload.name||!payload.date){Swal.fire("تنبيه","يرجى ملء الحقول المطلوبة","warning");return}
-  document.getElementById("save-txt").textContent="جاري الحفظ...";
-  Swal.fire({title:"جاري الحفظ...",allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
-  try{
-    await API.run(payload.id?"updateEvent":"addEvent",payload);
-    Swal.fire({title:"تم بنجاح",icon:"success",timer:1400,showConfirmButton:false});
-    if(cal)cal.refetchEvents();const date=payload.date;resetForm();
-    document.getElementById("f-date").value=date;await loadDayList(date);
-  }catch(e){Swal.fire("خطأ","تعذر حفظ الحجز","error");console.error(e)}
-  finally{document.getElementById("save-txt").textContent="حفظ الحجز"}
-}
-function resetForm(){
-  document.getElementById("bForm").reset();document.getElementById("f-id").value="";
-  document.getElementById("exp-rows").innerHTML="";document.getElementById("day-list").innerHTML="";
-  document.getElementById("save-txt").textContent="حفظ الحجز";
-  buildTypes();buildSrv([]);calcFin();
-}
-function actEdit(p){
-  document.getElementById("f-id").value=p.id||"";document.getElementById("f-name").value=p.name||"";
-  document.getElementById("f-phone").value=p.phone||"";document.getElementById("f-date").value=p.date||"";
-  document.getElementById("f-place").value=p.place||"";document.getElementById("f-time").value=p.time||"";
-  document.getElementById("f-amount").value=p.amount||"";document.getElementById("f-deposit").value=p.deposit||"";
-  document.getElementById("f-assigned").value=p.assignedToCode||"";
-  document.getElementById("save-txt").textContent="تحديث الحجز";
-  const det=String(p.details||""),sm=det.match(/خدمات:\s*([^|]+)/);
-  const selSrv=sm?sm[1].split(",").map(s=>s.trim()).filter(s=>s&&s!=="لا يوجد"):[];
-  document.getElementById("f-details").value=det.replace(/\s*\|\s*خدمات:.*$/,"").replace(/^خدمات:.*$/,"").trim();
-  buildTypes(p.type||"");buildSrv(selSrv);
-  document.getElementById("exp-rows").innerHTML="";(p.expenses||[]).forEach(e=>addExpRow(e));calcFin();
-  document.getElementById("bForm").scrollIntoView({behavior:"smooth",block:"start"});
-}
+    function bindEvents(){
+      document.getElementById('searchInput').addEventListener('input', applyFilters);
+      document.getElementById('statusFilter').addEventListener('change', applyFilters);
+    }
 
-async function actPaid(id,date){
-  const r=await Swal.fire({title:"تسجيل السداد؟",icon:"question",showCancelButton:true,confirmButtonText:"نعم",cancelButtonText:"الغاء",confirmButtonColor:"var(--ok)"});
-  if(!r.isConfirmed)return;
-  Swal.fire({title:"جاري التحديث...",allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
-  try{await API.run("markPaid",id);Swal.fire({title:"تم السداد",icon:"success",timer:1400,showConfirmButton:false});if(cal)cal.refetchEvents();await loadDayList(date)}
-  catch(e){Swal.fire("خطأ","تعذر التحديث","error")}
-}
-function actRemind(phone,name,rem){
-  const txt=`مرحبا *${name}*\n\nتذكير بسداد المبلغ المتبقي:\n${rem} ريال\n\n${_cfg.agencyName||"وكالة ميديا"}`;
-  window.open(`https://wa.me/${np(phone)}?text=${encodeURIComponent(txt)}`,"_blank");
-}
-async function actInv(id,phone){
-  Swal.fire({title:"جاري انشاء الفاتورة...",allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
-  try{const url=await API.run("generateInvoicePDF",id);Swal.close();const txt=`مرحبا\nفاتورة حجزك:\n${url}\n\n${_cfg.agencyName||"وكالة ميديا"}`;window.open(`https://wa.me/${np(phone)}?text=${encodeURIComponent(txt)}`,"_blank")}
-  catch(e){Swal.fire("خطأ","تعذر انشاء الفاتورة","error")}
-}
-async function actDel(id,date){
-  const r=await Swal.fire({title:"حذف الحجز؟",icon:"warning",showCancelButton:true,confirmButtonText:"نعم احذف",cancelButtonText:"الغاء",confirmButtonColor:"var(--err)"});
-  if(!r.isConfirmed)return;
-  Swal.fire({title:"جاري الحذف...",allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
-  try{await API.run("deleteEvent",id);Swal.fire({title:"تم الحذف",icon:"success",timer:1400,showConfirmButton:false});if(cal)cal.refetchEvents();await loadDayList(date)}
-  catch(e){Swal.fire("خطأ","تعذر الحذف","error")}
-}
+    async function loadProjects(){
+      Spinner.show('جاري تحميل المشاريع...');
+      try{
+        _projects = await safeApi('getProjects');
+        applyFilters();
+      }finally{
+        Spinner.hide();
+      }
+    }
 
-async function loadTasks(){
-  const up=document.getElementById("lst-up"),pa=document.getElementById("lst-pa");
-  up.innerHTML=pa.innerHTML=`<div class="ld"><div class="sp"></div></div>`;
-  try{
-    const{userCode,permissions}=Session.get();const all=permissions?.allPages===true;
-    document.getElementById("tk-ttl").textContent=all?"الاعمال المسندة (الجميع)":"الاعمال المسندة لي";
-    const res=await API.run("getAssignedBookings",userCode,all);
-    const u=res.upcoming||[],p=res.past||[];
-    document.getElementById("cnt-up").textContent=u.length;document.getElementById("cnt-pa").textContent=p.length;
-    up.innerHTML=u.length?u.map(b=>tkCard(b,false)).join(""):`<div class="empty"><i class="fas fa-calendar-check"></i><p>لا اعمال قادمة</p></div>`;
-    pa.innerHTML=p.length?p.map(b=>tkCard(b,true)).join(""):`<div class="empty"><i class="fas fa-clock-rotate-left"></i><p>لا اعمال سابقة</p></div>`;
-  }catch(e){up.innerHTML=`<div class="empty"><i class="fas fa-exclamation"></i><p>تعذر التحميل</p></div>`;pa.innerHTML=""}
-}
-function tkCard(b,isPast){
-  const mob=np(b.assignedToMobile||"");
-  const waUrl=mob?`https://wa.me/${mob}?text=${encodeURIComponent(`مرحبا ${b.assignedToName||""}\nتذكير: ${b.customerName||""}\nالتاريخ: ${b.date}\nالمكان: ${b.place||""}`)}`:"";
-  const det=String(b.details||""),sm=det.match(/خدمات:\s*([^|]+)/);
-  const srvs=sm?sm[1].trim():"",baseD=det.replace(/\s*\|\s*خدمات:.*$/,"").replace(/^خدمات:.*$/,"").trim();
-  const srvChips=srvs&&srvs!=="لا يوجد"?`<div class="ts">${srvs.split(",").map(s=>`<span class="chip co">${x(s.trim())}</span>`).join("")}</div>`:"";
-  return`<div class="tc${isPast?" past":""}">
-    <div class="td"><i class="fas fa-calendar-day"></i> ${x(b.date||"")}</div>
-    <div class="tt">${x(b.title||"")}</div>
-    <div class="tm">${b.place?`<i class="fas fa-location-dot" style="color:var(--p)"></i> ${x(b.place)}&nbsp;`:""}${b.assignedToName?`<i class="fas fa-user-check" style="color:var(--ok)"></i> ${x(b.assignedToName)}`:""}</div>
-    ${srvChips}${baseD?`<div style="margin-top:.32rem;font-size:.71rem;color:var(--muted);border-right:2px solid var(--p);padding-right:.42rem">${x(baseD)}</div>`:""}
-    ${waUrl?`<a href="${waUrl}" target="_blank" class="twa"><i class="fab fa-whatsapp"></i> تذكير واتساب</a>`:""}
-  </div>`;
-}
+    function applyFilters(){
+      const search = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+      const status = document.getElementById('statusFilter').value || '';
 
-function $s(id,v){const e=document.getElementById(id);if(e)e.textContent=v}
-function x(t){return String(t??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;")}
-function n(v){return Number(v||0).toLocaleString("ar-SA")}
-function dleft(){const now=new Date(),last=new Date(now.getFullYear(),now.getMonth()+1,0);return last.getDate()-now.getDate()}
-function np(raw){let s=String(raw||"").replace(/\s/g,"").replace(/^\+/,"");if(s.startsWith("966")&&s.length===12)return s;if(s.startsWith("05")&&s.length===10)return"966"+s.slice(1);if(s.startsWith("5")&&s.length===9)return"966"+s;return s}
-</script>
+      _filtered = (_projects || []).filter(p => {
+        const name = getProjectName(p).toLowerCase();
+        const st = getProjectStatus(p);
+        if (search && !name.includes(search)) return false;
+        if (status && st !== status) return false;
+        return true;
+      });
+
+      renderSummary();
+      renderProjects();
+    }
+
+    function renderSummary(){
+      const total = _filtered.length;
+      const active = _filtered.filter(p => getProjectStatus(p) === 'قيد التنفيذ').length;
+      const done = _filtered.filter(p => getProjectStatus(p) === 'مكتمل').length;
+      const totalValue = _filtered.reduce((a,p) => a + getProjectValue(p), 0);
+
+      document.getElementById('sumProjects').textContent = fmt(total);
+      document.getElementById('sumActive').textContent = fmt(active);
+      document.getElementById('sumDone').textContent = fmt(done);
+      document.getElementById('sumValue').textContent = fmt(totalValue);
+    }
+
+    function renderProjects(){
+      const cards = document.getElementById('projectsCardsContainer');
+      const tbody = document.querySelector('#projectsTable tbody');
+      const empty = document.getElementById('emptyState');
+
+      cards.innerHTML = '';
+      tbody.innerHTML = '';
+
+      if (!_filtered.length){
+        empty.classList.remove('d-none');
+        return;
+      }
+      empty.classList.add('d-none');
+
+      _filtered.forEach(p => {
+        const id = String(p.id || p['id'] || '');
+        const name = getProjectName(p) || '—';
+        const status = getProjectStatus(p);
+        const statusClass = status === 'مكتمل' ? 'ok' : (status === 'قيد التنفيذ' ? 'warn' : 'base');
+        const value = getProjectValue(p);
+        const start = p['تاريخ بداية المشروع'] || '—';
+        const updated = p['تاريخ آخر تحديث'] || '—';
+        const stepsDone = _steps.filter(step => boolVal(p[step])).length;
+
+        cards.insertAdjacentHTML('beforeend', `
+          <div class="mobile-card">
+            <div class="head">
+              <div class="title">${esc(name)}</div>
+              <span class="chip ${statusClass}">${esc(status)}</span>
+            </div>
+            <div class="line"><strong>القيمة:</strong> <span class="text-num">${fmt(value)}</span></div>
+            <div class="line"><strong>تاريخ البداية:</strong> ${esc(start)}</div>
+            <div class="line"><strong>آخر تحديث:</strong> ${esc(updated)}</div>
+            <div class="line"><strong>الخطوات المنجزة:</strong> ${fmt(stepsDone)} / ${fmt(_steps.length)}</div>
+            <div class="mobile-actions">
+              <button class="btn btn-sm btn-outline-warning" onclick="editProject('${esc(id)}')"><i class="fa-solid fa-pen"></i> تعديل</button>
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteProjectUI('${esc(id)}')"><i class="fa-solid fa-trash"></i> حذف</button>
+            </div>
+          </div>
+        `);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${esc(name)}</td>
+          <td><span class="chip ${statusClass}">${esc(status)}</span></td>
+          <td class="text-num">${fmt(value)}</td>
+          <td>${esc(start)}</td>
+          <td>${esc(updated)}</td>
+          <td>
+            <div class="table-actions">
+              <button class="btn btn-sm btn-outline-warning" onclick="editProject('${esc(id)}')"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteProjectUI('${esc(id)}')"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function openProjectModal(project = null){
+      document.getElementById('projectForm').reset();
+      document.getElementById('projectId').value = project?.id || project?.['id'] || '';
+      document.getElementById('projectModalTitle').textContent = project ? 'تعديل مشروع' : 'إضافة مشروع';
+      document.getElementById('projectName').value = getProjectName(project || {});
+      document.getElementById('projectValue').value = getProjectValue(project || {}) || '';
+      document.getElementById('projectEnded').value = (boolVal(project?.['إنهاء المشروع']) || boolVal(project?.['إنهاء_المشروع'])) ? 'true' : 'false';
+
+      const stepsWrap = document.getElementById('projectStepsForm');
+      stepsWrap.innerHTML = (_steps || []).map(step => `
+        <label class="step-item">
+          <input type="checkbox" class="form-check-input ms-2 project-step-check" data-step="${esc(step)}" ${boolVal(project?.[step]) ? 'checked' : ''}>
+          <span>${esc(step)}</span>
+        </label>
+      `).join('') || '<div class="empty">عرّف خطوات المشاريع أولًا من الإعدادات.</div>';
+
+      projectModal.show();
+    }
+
+    function editProject(id){
+      const project = (_projects || []).find(p => String(p.id || p['id'] || '') === String(id));
+      if (!project) return Toast.error('تعذر العثور على المشروع');
+      openProjectModal(project);
+    }
+
+    function buildProjectPayload(){
+      const payload = {
+        'اسم المشروع': document.getElementById('projectName').value.trim(),
+        'قيمة المشروع': document.getElementById('projectValue').value ? Number(document.getElementById('projectValue').value) : '',
+        'إنهاء المشروع': document.getElementById('projectEnded').value === 'true'
+      };
+
+      document.querySelectorAll('.project-step-check').forEach(ch => {
+        payload[ch.dataset.step] = ch.checked;
+      });
+
+      return payload;
+    }
+
+    async function saveProject(){
+      const id = document.getElementById('projectId').value.trim();
+      const payload = buildProjectPayload();
+
+      if (!payload['اسم المشروع']){
+        Toast.warning('اسم المشروع مطلوب');
+        return;
+      }
+
+      Spinner.show(id ? 'جاري تحديث المشروع...' : 'جاري إضافة المشروع...');
+      try{
+        if (id){
+          payload.id = id;
+          await safeApi('updateProject', payload);
+          Toast.success('تم تحديث المشروع بنجاح');
+        }else{
+          await safeApi('addProject', payload);
+          Toast.success('تم إضافة المشروع بنجاح');
+        }
+        projectModal.hide();
+        await loadProjects();
+      }finally{
+        Spinner.hide();
+      }
+    }
+
+    async function deleteProjectUI(id){
+      const ok = await Swal.fire({
+        title:'حذف المشروع؟',
+        text:'لن يمكن التراجع عن هذه العملية',
+        icon:'warning',
+        showCancelButton:true,
+        confirmButtonText:'نعم، احذف',
+        cancelButtonText:'إلغاء'
+      });
+      if (!ok.isConfirmed) return;
+
+      Spinner.show('جاري حذف المشروع...');
+      try{
+        await safeApi('deleteProject', id);
+        Toast.success('تم حذف المشروع');
+        await loadProjects();
+      }finally{
+        Spinner.hide();
+      }
+    }
+
+    window.openProjectModal = openProjectModal;
+    window.editProject = editProject;
+    window.saveProject = saveProject;
+    window.deleteProjectUI = deleteProjectUI;
+    window.loadProjects = loadProjects;
+
+    document.addEventListener('DOMContentLoaded', initPage);
+  </script>
 </body>
 </html>
