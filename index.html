@@ -567,13 +567,14 @@
    تعريف الصفحات وترتيبها في القائمة
    ═══════════════════════════════════════════ */
 const NAV_PAGES = [
-  { id:"dashboard", label:"لوحة التحكم",       icon:"fas fa-gauge",       frame:"dashboard.html" },
-  { id:"finance",   label:"المصروفات والمالية", icon:"fas fa-chart-line",  frame:"finance.html"   },
-  { id:"projects",  label:"المشاريع والأهداف", icon:"fas fa-diagram-project", frame:"projects.html"},
-  { id:"settings",  label:"الإعدادات",          icon:"fas fa-gear",        frame:"settings.html"  },
+  { id:"dashboard", label:"لوحة التحكم",        icon:"fas fa-gauge",           frame:"dashboard.html" },
+  { id:"finance",   label:"المصروفات والمالية",  icon:"fas fa-chart-line",      frame:"finance.html" },
+  { id:"projects",  label:"المشاريع والأهداف",   icon:"fas fa-diagram-project", frame:"projects.html" },
+  { id:"settings",  label:"الإعدادات",           icon:"fas fa-gear",            frame:"settings.html" }
 ];
 
 let currentPage = "dashboard";
+
 
 /* ═══════════════════════════════════════════
    تسجيل الدخول
@@ -635,6 +636,13 @@ function showMainApp() {
   loadInitialPage();
 }
 
+function getAllowedPages() {
+  return NAV_PAGES.filter(page => {
+    return !Session.canAccess || Session.canAccess(page.id);
+  });
+}
+
+
 function buildNav() {
   const sidebar   = document.getElementById("sidebar");
   const bottomNav = document.getElementById("bottomNav");
@@ -642,31 +650,41 @@ function buildNav() {
   sidebar.innerHTML = "";
   bottomNav.innerHTML = "";
 
-  const allowedPages = NAV_PAGES.filter(page => {
-    return !Session.canAccess || Session.canAccess(page.id);
-  });
+  const allowedPages = getAllowedPages();
 
   allowedPages.forEach(page => {
     sidebar.insertAdjacentHTML("beforeend", `
-      <button class="sidebar-item ${page.id === currentPage ? "active" : ""}" onclick="openPage('${page.id}')">
+      <button type="button"
+              class="sidebar-item"
+              data-page-id="${page.id}">
         <i class="${page.icon}"></i>
         <span>${page.label}</span>
       </button>
     `);
 
     bottomNav.insertAdjacentHTML("beforeend", `
-      <button class="bottom-nav-item ${page.id === currentPage ? "active" : ""}" onclick="openPage('${page.id}')">
+      <button type="button"
+              class="bottom-nav-item"
+              data-page-id="${page.id}">
         <i class="${page.icon}"></i>
         <span>${page.label}</span>
       </button>
     `);
   });
+
+  sidebar.querySelectorAll("[data-page-id]").forEach(btn => {
+    btn.addEventListener("click", () => openPage(btn.dataset.pageId));
+  });
+
+  bottomNav.querySelectorAll("[data-page-id]").forEach(btn => {
+    btn.addEventListener("click", () => openPage(btn.dataset.pageId));
+  });
+
+  updateNavActive();
 }
 
 function loadInitialPage() {
-  const allowedPages = NAV_PAGES.filter(page => {
-    return !Session.canAccess || Session.canAccess(page.id);
-  });
+  const allowedPages = getAllowedPages();
 
   if (!allowedPages.length) {
     document.getElementById("pageLoader").innerHTML = `
@@ -677,8 +695,7 @@ function loadInitialPage() {
     return;
   }
 
-  currentPage = allowedPages[0].id;
-  openPage(currentPage);
+  openPage(allowedPages[0].id);
 }
 
 function openPage(pageId) {
@@ -686,44 +703,46 @@ function openPage(pageId) {
   if (!page) return;
 
   currentPage = pageId;
-
-  document.querySelectorAll(".sidebar-item").forEach(el => {
-    el.classList.toggle("active", el.getAttribute("onclick")?.includes("'" + pageId + "'"));
-  });
-
-  document.querySelectorAll(".bottom-nav-item").forEach(el => {
-    el.classList.toggle("active", el.getAttribute("onclick")?.includes("'" + pageId + "'"));
-  });
-
-  document.querySelectorAll(".page-frame").forEach(frame => {
-    frame.classList.remove("active");
-  });
+  updateNavActive();
 
   const loader = document.getElementById("pageLoader");
-  loader.style.display = "flex";
+  const allFrames = document.querySelectorAll(".page-frame");
+  allFrames.forEach(f => f.classList.remove("active"));
 
   const targetFrame = document.getElementById("frame-" + pageId);
-  if (!targetFrame) return;
+  if (!targetFrame) {
+    loader.style.display = "flex";
+    loader.innerHTML = `
+      <div style="text-align:center;color:#dc2626;font-weight:700;padding:2rem">
+        الإطار غير موجود للصفحة: ${pageId}
+      </div>
+    `;
+    return;
+  }
 
-  // لا نعيد تحميل الصفحة إذا كان src موجودًا مسبقًا
-  if (!targetFrame.getAttribute("src")) {
-    targetFrame.onload = () => {
-      loader.style.display = "none";
-      targetFrame.classList.add("active");
-    };
+  loader.style.display = "flex";
 
+  const activateFrame = () => {
+    allFrames.forEach(f => f.classList.remove("active"));
+    targetFrame.classList.add("active");
+    loader.style.display = "none";
+  };
+
+  const desiredSrc = page.frame;
+  const currentSrc = targetFrame.getAttribute("src") || "";
+
+  if (currentSrc !== desiredSrc) {
+    targetFrame.onload = activateFrame;
     targetFrame.onerror = () => {
       loader.innerHTML = `
         <div style="text-align:center;color:#dc2626;font-weight:700;padding:2rem">
-          تعذر تحميل الصفحة: ${page.frame}
+          تعذر تحميل الصفحة: ${desiredSrc}
         </div>
       `;
     };
-
-    targetFrame.src = page.frame;
+    targetFrame.src = desiredSrc;
   } else {
-    loader.style.display = "none";
-    targetFrame.classList.add("active");
+    activateFrame();
   }
 }
 
