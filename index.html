@@ -628,8 +628,8 @@ function showMainApp() {
   document.getElementById("loginPage").style.display = "none";
   document.getElementById("mainApp").classList.add("visible");
 
-  const { userName } = Session.get();
-  document.getElementById("headerUserName").textContent = userName || "—";
+  const session = Session.get();
+  document.getElementById("headerUserName").textContent = session.userName || "—";
 
   buildNav();
   loadInitialPage();
@@ -638,94 +638,98 @@ function showMainApp() {
 function buildNav() {
   const sidebar   = document.getElementById("sidebar");
   const bottomNav = document.getElementById("bottomNav");
+
   sidebar.innerHTML = "";
   bottomNav.innerHTML = "";
 
-  NAV_PAGES.forEach(page => {
-    if (!Session.canAccess(page.id)) return;
-
-    // القائمة الجانبية
-    const sBtn = document.createElement("button");
-    sBtn.className = "sidebar-item";
-    sBtn.dataset.page = page.id;
-    sBtn.innerHTML = `<i class="${page.icon}"></i> ${page.label}`;
-    sBtn.addEventListener("click", () => navigateTo(page.id));
-    sidebar.appendChild(sBtn);
-
-    // التنقل السفلي
-    const bBtn = document.createElement("button");
-    bBtn.className = "bottom-nav-item";
-    bBtn.dataset.page = page.id;
-    bBtn.innerHTML = `<i class="${page.icon}"></i><span>${page.label.split("و")[0].trim()}</span>`;
-    bBtn.addEventListener("click", () => navigateTo(page.id));
-    bottomNav.appendChild(bBtn);
+  const allowedPages = NAV_PAGES.filter(page => {
+    return !Session.canAccess || Session.canAccess(page.id);
   });
 
-  // فاصل + زر الخروج في الجانبية
-  const div = document.createElement("div");
-  div.className = "sidebar-divider";
-  sidebar.appendChild(div);
+  allowedPages.forEach(page => {
+    sidebar.insertAdjacentHTML("beforeend", `
+      <button class="sidebar-item ${page.id === currentPage ? "active" : ""}" onclick="openPage('${page.id}')">
+        <i class="${page.icon}"></i>
+        <span>${page.label}</span>
+      </button>
+    `);
 
-  const logoutBtn = document.createElement("button");
-  logoutBtn.className = "sidebar-item";
-  logoutBtn.style.color = "var(--danger)";
-  logoutBtn.innerHTML = `<i class="fas fa-right-from-bracket"></i> تسجيل الخروج`;
-  logoutBtn.addEventListener("click", doLogout);
-  sidebar.appendChild(logoutBtn);
+    bottomNav.insertAdjacentHTML("beforeend", `
+      <button class="bottom-nav-item ${page.id === currentPage ? "active" : ""}" onclick="openPage('${page.id}')">
+        <i class="${page.icon}"></i>
+        <span>${page.label}</span>
+      </button>
+    `);
+  });
 }
 
 function loadInitialPage() {
-  // أول صفحة مسموح بها
-  const first = NAV_PAGES.find(p => Session.canAccess(p.id));
-  if (first) navigateTo(first.id);
-}
-
-function navigateTo(pageId) {
-  // تحديث حالة الأزرار
-  document.querySelectorAll("[data-page]").forEach(el => {
-    el.classList.toggle("active", el.dataset.page === pageId);
+  const allowedPages = NAV_PAGES.filter(page => {
+    return !Session.canAccess || Session.canAccess(page.id);
   });
 
-  // إخفاء كل الـ iframes
-  document.querySelectorAll(".page-frame").forEach(f => f.classList.remove("active"));
-
-  const frameId = "frame-" + pageId;
-  const frame   = document.getElementById(frameId);
-
-  if (!frame) { console.warn("لا يوجد iframe لـ", pageId); return; }
-
-  // تحميل الصفحة لأول مرة فقط
-  const page = NAV_PAGES.find(p => p.id === pageId);
-  if (page && !frame.src) {
-    frame.src = page.frame;
+  if (!allowedPages.length) {
+    document.getElementById("pageLoader").innerHTML = `
+      <div style="text-align:center;color:#dc2626;font-weight:700;padding:2rem">
+        لا توجد صفحات متاحة لهذا المستخدم
+      </div>
+    `;
+    return;
   }
 
-  frame.classList.add("active");
-  frame.style.height = "calc(100vh - 62px)";
-  currentPage = pageId;
-
-  // أخفِ اللودر
-  document.getElementById("pageLoader").style.display = "none";
+  currentPage = allowedPages[0].id;
+  openPage(currentPage);
 }
 
-/* ═══════════════════════════════════════════
-   تسجيل الخروج
-   ═══════════════════════════════════════════ */
-function doLogout() {
-  Swal.fire({
-    title: "تسجيل الخروج",
-    text: "هل تريد تسجيل الخروج؟",
-    icon: "question",
-    showCancelButton: true,
-    confirmButtonText: "نعم، خروج",
-    cancelButtonText: "إلغاء",
-    confirmButtonColor: "#dc2626",
-  }).then(r => {
-    if (r.isConfirmed) {
-      Session.clear();
-      location.reload();
-    }
+function openPage(pageId) {
+  const page = NAV_PAGES.find(p => p.id === pageId);
+  if (!page) return;
+
+  currentPage = pageId;
+
+  document.querySelectorAll(".sidebar-item").forEach(el => {
+    el.classList.toggle("active", el.getAttribute("onclick")?.includes("'" + pageId + "'"));
   });
+
+  document.querySelectorAll(".bottom-nav-item").forEach(el => {
+    el.classList.toggle("active", el.getAttribute("onclick")?.includes("'" + pageId + "'"));
+  });
+
+  document.querySelectorAll(".page-frame").forEach(frame => {
+    frame.classList.remove("active");
+  });
+
+  const loader = document.getElementById("pageLoader");
+  loader.style.display = "flex";
+
+  const targetFrame = document.getElementById("frame-" + pageId);
+  if (!targetFrame) return;
+
+  // لا نعيد تحميل الصفحة إذا كان src موجودًا مسبقًا
+  if (!targetFrame.getAttribute("src")) {
+    targetFrame.onload = () => {
+      loader.style.display = "none";
+      targetFrame.classList.add("active");
+    };
+
+    targetFrame.onerror = () => {
+      loader.innerHTML = `
+        <div style="text-align:center;color:#dc2626;font-weight:700;padding:2rem">
+          تعذر تحميل الصفحة: ${page.frame}
+        </div>
+      `;
+    };
+
+    targetFrame.src = page.frame;
+  } else {
+    loader.style.display = "none";
+    targetFrame.classList.add("active");
+  }
+}
+
+function doLogout() {
+  Session.clear();
+  window.location.href = APP_CONFIG.PAGES.index || "index.html";
 }
 
 /* ═══════════════════════════════════════════
