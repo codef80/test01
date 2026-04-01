@@ -46,44 +46,42 @@ const APP_CONFIG = {
 
 
 /* ============================================================
-   طبقة API — جميع استدعاءات Apps Script تمر من هنا
+   طبقة API — GitHub Pages → Apps Script عبر HTTP GET
+   ============================================================
+   الآلية:
+     fetch(API_URL?fn=X&p0=Y&p1=Z) → Apps Script doGet → JSON
    ============================================================ */
 const API = {
 
   /**
-   * استدعاء دالة Apps Script
-   * @param {string}   fn    اسم الدالة
-   * @param {any[]}    args  المعاملات
+   * استدعاء دالة Apps Script من GitHub Pages
+   * @param {string} fn    اسم الدالة (يجب في ALLOWED_FUNCTIONS)
+   * @param {...any} args  المعاملات — تُرسَل كـ p0, p1, p2, ...
    * @returns {Promise<any>}
    */
-  call(fn, ...args) {
-    return new Promise((resolve, reject) => {
-      const params = new URLSearchParams({ fn });
-      args.forEach((a, i) => {
-        params.append(`p${i}`, typeof a === "object" ? JSON.stringify(a) : String(a ?? ""));
-      });
-
-      fetch(`${APP_CONFIG.API_URL}?${params}`, {
-        method:  "GET",
-        redirect:"follow",
-      })
-        .then(r => r.json())
-        .then(resolve)
-        .catch(reject);
-    });
-  },
-
-  /**
-   * استدعاء google.script.run (للاستخدام داخل Apps Script نفسه)
-   * يُستخدم هذا النظام — index.html هو HTML داخل Apps Script
-   */
   run(fn, ...args) {
-    return new Promise((resolve, reject) => {
-      let runner = google.script.run
-        .withSuccessHandler(resolve)
-        .withFailureHandler(reject);
-      runner[fn](...args);
+    const params = new URLSearchParams({ fn });
+    args.forEach((a, i) => {
+      params.append("p" + i,
+        a === null || a === undefined ? ""
+        : typeof a === "object"      ? JSON.stringify(a)
+        : String(a)
+      );
     });
+
+    const url = `${APP_CONFIG.API_URL}?${params.toString()}`;
+
+    return fetch(url, { method: "GET", redirect: "follow" })
+      .then(r => {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(data => {
+        if (data && data.success === false && data.error) {
+          throw new Error(data.error);
+        }
+        return data;
+      });
   },
 };
 
